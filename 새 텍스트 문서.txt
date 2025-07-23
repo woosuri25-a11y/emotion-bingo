@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Meter Chat 🌈</title>
+    <style>
+        /* 기존 CSS는 동일하게 유지됩니다. */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .app-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 800px;
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .header {
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .screen {
+            display: none;
+            padding: 30px;
+            min-height: 400px;
+            text-align: center; /* 추가: 중앙 정렬 */
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .room-code-screen {
+            text-align: center;
+        }
+
+        .code-input {
+            padding: 15px 20px;
+            font-size: 1.2rem;
+            border: 3px solid #e0e0e0;
+            border-radius: 15px;
+            margin: 20px;
+            width: 200px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .code-input:focus {
+            outline: none;
+            border-color: #ff6b6b;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .mood-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 20px auto; /* auto로 변경하여 중앙 정렬 */
+            max-width: 600px;
+        }
+
+        .mood-item {
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: flex; /* 추가: 텍스트 중앙 정렬 */
+            flex-direction: column; /* 추가: 텍스트 중앙 정렬 */
+            justify-content: center; /* 추가: 텍스트 중앙 정렬 */
+            align-items: center; /* 추가: 텍스트 중앙 정렬 */
+            min-height: 60px; /* 추가: 일관된 높이 */
+        }
+
+        .mood-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .mood-item.selected {
+            border-color: #ff6b6b;
+            background: #fff5f5;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5); /* 추가: 선택 효과 강화 */
+        }
+
+        .mood-item.high-energy.high-pleasant { background: linear-gradient(135deg, #ffd54f, #ff8a65); } /* Yellow */
+        .mood-item.high-energy.low-pleasant { background: linear-gradient(135deg, #ff7043, #d32f2f); color: white; } /* Red */
+        .mood-item.low-energy.high-pleasant { background: linear-gradient(135deg, #a5d6a7, #66bb6a); } /* Green */
+        .mood-item.low-energy.low-pleasant { background: linear-gradient(135deg, #90a4ae, #546e7a); color: white; } /* Blue */
+
+        .prediction-section, .response-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px auto; /* auto로 변경하여 중앙 정렬 */
+            max-width: 600px; /* 최대 너비 설정 */
+        }
+
+        .prediction-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border-left: 4px solid #ff6b6b;
+            text-align: left; /* 텍스트 좌측 정렬 */
+        }
+
+        .because-input {
+            width: calc(100% - 20px); /* 패딩 고려 */
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 60px;
+            box-sizing: border-box; /* 패딩이 너비에 포함되도록 */
+        }
+
+        .response-section {
+            background: #e8f5e8;
+        }
+
+        .match-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            margin-left: 10px;
+            font-weight: bold; /* 추가 */
+        }
+
+        .match-correct {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .match-incorrect {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        .support-message {
+            background: linear-gradient(135deg, #e1bee7, #f8bbd9);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px auto;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .role-indicator {
+            background: linear-gradient(45deg, #42a5f5, #66bb6a);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            z-index: 1000; /* 다른 요소 위에 표시 */
+        }
+
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 5px;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 8px;
+            margin: 20px auto; /* 중앙 정렬 */
+            width: 80%; /* 너비 설정 */
+            max-width: 500px; /* 최대 너비 설정 */
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        h2, h3, h4, p {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .mood-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            
+            .mood-item {
+                font-size: 0.8rem;
+                padding: 8px;
+                min-height: 50px; /* 모바일에서 높이 조정 */
+            }
+            
+            .app-container {
+                width: 95%;
+                margin: 10px;
+            }
+
+            .connection-status {
+                top: 10px;
+                right: 10px;
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">
+        🟢 Ready to Connect
+    </div>
+
+    <div class="app-container">
+        <div class="header">
+            <h1>🌈 Mood Meter Chat</h1>
+            <p>친구의 감정을 맞춰보세요!</p>
+        </div>
+
+        <div class="screen active" id="roomCodeScreen">
+            <div class="room-code-screen">
+                <h2>🚪 방 입장하기</h2>
+                <p>친구와 함께 사용할 간단한 코드를 입력하세요 (예: ABC123)</p>
+                <input type="text" class="code-input" id="roomCodeInput" placeholder="코드 입력" maxlength="6">
+                <br>
+                <button class="btn" onclick="joinRoom()">입장하기 🚀</button>
+                <div style="margin-top: 20px; font-size: 0.9rem; color: #666;">
+                    💡 팁: 친구와 같은 코드를 입력하면 함께 대화할 수 있어요!
+                </div>
+            </div>
+        </div>
+
+        <div class="screen" id="moodSelectionScreen">
+            <div class="role-indicator" id="roleIndicator">
+                🎯 당신은 예측자입니다
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 25%"></div>
+            </div>
+
+            <h2>🤔 친구의 감정을 예측해보세요</h2>
+            <p>친구가 지금 느끼고 있을 것 같은 감정을 **3개** 선택하세요.</p>
+            
+            <div class="mood-grid" id="moodGrid">
+                </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <span id="selectionCount">0</span>/3 개 선택됨
+                <br><br>
+                <button class="btn" id="continueBtn" onclick="generatePredictions()" disabled>예측 문장 만들기 ✨</button>
+            </div>
+        </div>
+
+        <div class="screen" id="predictionScreen">
+            <div class="role-indicator">
+                💭 친구의 감정을 예측해보세요
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 50%"></div>
+            </div>
+
+            <h2>📝 예측 문장 완성하기</h2>
+            <p>선택한 감정에 맞춰 친구의 모습을 상상하며 이유를 작성해주세요.</p>
+            <div class="prediction-section" id="predictionSection">
+                </div>
+
+            <button class="btn" onclick="sendPredictions()">친구에게 보내기 💌</button>
+        </div>
+
+        <div class="screen" id="responseScreen">
+            <div class="role-indicator">
+                💝 친구의 예측에 답해보세요
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 75%"></div>
+            </div>
+
+            <h2>🎭 친구가 예측한 나의 감정</h2>
+            <div id="receivedPredictions" class="prediction-section" style="text-align: left;">
+                </div>
+
+            <h3>내가 정말로 느끼는 감정 **3개**를 선택하고 이유를 작성하세요.</h3>
+            <div class="mood-grid" id="responseMoodGrid">
+                </div>
+
+            <div class="response-section">
+                <h4>나의 감정 이유:</h4>
+                <textarea class="because-input" id="myFeelingsReason" placeholder="I feel this way because..."></textarea>
+            </div>
+
+            <button class="btn" onclick="sendResponse()">답변 보내기 💕</button>
+        </div>
+
+        <div class="screen" id="resultsScreen">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 100%"></div>
+            </div>
+
+            <h2>🎉 결과 확인하기</h2>
+            <div id="resultsContent">
+                </div>
+
+            <div class="support-message">
+                <h3>💙 서로를 응원해요!</h3>
+                <p>친구에게 따뜻한 응원의 메시지를 남겨주세요.</p>
+                <textarea class="because-input" id="supportMessage" placeholder="친구에게 응원의 메시지를 남겨주세요..."></textarea>
+                <button class="btn" id="sendSupportBtn" onclick="sendSupport()" style="margin-top: 10px;">응원 메시지 보내기 🌟</button>
+            </div>
+
+            <button class="btn" onclick="startNewChat()">새로운 대화 시작하기 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // Mood data based on the mood meter (기존 데이터 유지)
+        const moodData = {
+            // High Energy, High Pleasant (Yellow)
+            'ecstatic': { kr: '황홀한', energy: 'high', pleasant: 'high' },
+            'elated': { kr: '의기양양한', energy: 'high', pleasant: 'high' },
+            'jubilant': { kr: '이주 신나는', energy: 'high', pleasant: 'high' },
+            'enthusiastic': { kr: '열광하는', energy: 'high', pleasant: 'high' },
+            'lively': { kr: '활발한', energy: 'high', pleasant: 'high' },
+            'upbeat': { kr: '긍정적인', energy: 'high', pleasant: 'high' },
+            'cheerful': { kr: '쾌활한', energy: 'high', pleasant: 'high' },
+            'motivated': { kr: '동기부여된', energy: 'high', pleasant: 'high' },
+            'inspired': { kr: '영감을 받은', energy: 'high', pleasant: 'high' },
+            'optimistic': { kr: '낙관적인', energy: 'high', pleasant: 'high' },
+            'energized': { kr: '기운이 넘치는', energy: 'high', pleasant: 'high' },
+            'excited': { kr: '흥분한', energy: 'high', pleasant: 'high' },
+            'festive': { kr: '흥겨운', energy: 'high', pleasant: 'high' },
+            'focused': { kr: '집중하는', energy: 'high', pleasant: 'high' },
+            'happy': { kr: '행복한', energy: 'high', pleasant: 'high' },
+            'proud': { kr: '자랑스러운', energy: 'high', pleasant: 'high' },
+            'thrilled': { kr: '짜릿한', energy: 'high', pleasant: 'high' },
+            'playful': { kr: '재미있는', energy: 'high', pleasant: 'high' },
+            'blissful': { kr: '더없이 행복한', energy: 'high', pleasant: 'high' },
+
+            // High Energy, Low Pleasant (Red)
+            'enraged': { kr: '격분한', energy: 'high', pleasant: 'low' },
+            'furious': { kr: '분노한', energy: 'high', pleasant: 'low' },
+            'angry': { kr: '화난', energy: 'high', pleasant: 'low' },
+            'nervous': { kr: '초조한', energy: 'high', pleasant: 'low' },
+            'restless': { kr: '안절부절한', energy: 'high', pleasant: 'low' },
+            'hyper': { kr: '들뜬', energy: 'high', pleasant: 'low' },
+            'worried': { kr: '근심하는', energy: 'high', pleasant: 'low' },
+            'annoyed': { kr: '짜증나는', energy: 'high', pleasant: 'low' },
+            'frustrated': { kr: '좌절한', energy: 'high', pleasant: 'low' },
+            'tense': { kr: '긴장한', energy: 'high', pleasant: 'low' },
+            'shocked': { kr: '충격받은', energy: 'high', pleasant: 'low' },
+            'stunned': { kr: '망연자실한', energy: 'high', pleasant: 'low' },
+            'surprised': { kr: '놀란', energy: 'high', pleasant: 'low' },
+            'panicked': { kr: '공황상태의', energy: 'high', pleasant: 'low' },
+            'stressed': { kr: '스트레스 받는', energy: 'high', pleasant: 'low' },
+            'overwhelmed': { kr: '압도당한', energy: 'high', pleasant: 'low' },
+            'livid': { kr: '격노한', energy: 'high', pleasant: 'low' },
+            'irate': { kr: '화가 치민', energy: 'high', pleasant: 'low' },
+            'apprehensive': { kr: '우려하는', energy: 'high', pleasant: 'low' },
+
+            // Low Energy, High Pleasant (Green)
+            'fulfilled': { kr: '충만한', energy: 'low', pleasant: 'high' },
+            'content': { kr: '자족하는', energy: 'low', pleasant: 'high' },
+            'loving': { kr: '다정한', energy: 'low', pleasant: 'high' },
+            'grateful': { kr: '감사하는', energy: 'low', pleasant: 'high' },
+            'touched': { kr: '감동받은', energy: 'low', pleasant: 'high' },
+            'blessed': { kr: '축복받은', energy: 'low', pleasant: 'high' },
+            'balanced': { kr: '안정된', energy: 'low', pleasant: 'high' },
+            'comfortable': { kr: '편안한', energy: 'low', pleasant: 'high' },
+            'carefree': { kr: '근심 걱정 없는', energy: 'low', pleasant: 'high' },
+            'at ease': { kr: '쉽편한', energy: 'low', pleasant: 'high' },
+            'easygoing': { kr: '태평한', energy: 'low', pleasant: 'high' },
+            'satisfied': { kr: '만족스러운', energy: 'low', pleasant: 'high' },
+            'secure': { kr: '안전한', energy: 'low', pleasant: 'high' },
+            'calm': { kr: '평온한', energy: 'low', pleasant: 'high' },
+            'restful': { kr: '편안한', energy: 'low', pleasant: 'high' },
+            'chill': { kr: '차분한', energy: 'low', pleasant: 'high' },
+            'thoughtful': { kr: '생각에 잠긴', energy: 'low', pleasant: 'high' },
+            'peaceful': { kr: '평화로운', energy: 'low', pleasant: 'high' },
+            'cozy': { kr: '안락한', energy: 'low', pleasant: 'high' },
+            'serene': { kr: '안온한', energy: 'low', pleasant: 'high' },
+
+            // Low Energy, Low Pleasant (Blue)
+            'disgusted': { kr: '역겨운', energy: 'low', pleasant: 'low' },
+            'glum': { kr: '침울한', energy: 'low', pleasant: 'low' },
+            'disappointed': { kr: '실망스러운', energy: 'low', pleasant: 'low' },
+            'down': { kr: '의욕 없는', energy: 'low', pleasant: 'low' },
+            'apathetic': { kr: '냉담한', energy: 'low', pleasant: 'low' },
+            'morose': { kr: '시무룩한', energy: 'low', pleasant: 'low' },
+            'sad': { kr: '슬픈', energy: 'low', pleasant: 'low' },
+            'bored': { kr: '지루한', energy: 'low', pleasant: 'low' },
+            'tired': { kr: '피곤한', energy: 'low', pleasant: 'low' },
+            'depressed': { kr: '우울한', energy: 'low', pleasant: 'low' },
+            'sullen': { kr: '뚱한', energy: 'low', pleasant: 'low' },
+            'exhausted': { kr: '기진맥진한', energy: 'low', pleasant: 'low' },
+            'fatigued': { kr: '지친', energy: 'low', pleasant: 'low' },
+            'sleepy': { kr: '나른한', energy: 'low', pleasant: 'low' },
+            'compliant': { kr: '순종적인', energy: 'low', pleasant: 'low' },
+            'tranquil': { kr: '고요한', energy: 'low', pleasant: 'low' },
+            // 'cozy'와 'serene'이 low-energy, high-pleasant에 중복되어 있어 삭제합니다.
+        };
+
+        // App state
+        let currentRoom = '';
+        let selectedMoods = []; // 사용자가 선택한 감정 (예측 또는 응답)
+        let predictions = []; // 예측자가 친구에게 보낼 예측 문장
+        let isPredictor = true; // 현재 사용자가 예측자인지 응답자인지
+        let partnerPredictions = []; // 친구로부터 받은 예측
+        let myResponse = {}; // 내가 선택한 감정과 이유
+
+        // Example reasons for because clauses
+        const becauseExamples = [
+            "your eyes look tired",
+            "you're smiling brightly",
+            "you're sitting up straight",
+            "your shoulders look relaxed",
+            "you're wearing colorful clothes",
+            "you have a frown on your face",
+            "you're looking down",
+            "your hands are clenched",
+            "you seem to be moving slowly",
+            "you're bouncing in your seat",
+            "you're speaking quickly",
+            "you're very quiet today",
+            "you're humming a tune",
+            "you're fidgeting a lot",
+            "you look ready for anything"
+        ];
+
+        // Helper function to show and hide screens
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function generateMoodGrid(containerId, selectable = true) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            // 모든 감정을 무작위로 섞어서 표시
+            const shuffledMoods = Object.keys(moodData).sort(() => 0.5 - Math.random());
+
+            shuffledMoods.forEach(mood => {
+                const data = moodData[mood];
+                const item = document.createElement('div');
+                item.className = `mood-item ${data.energy}-energy ${data.pleasant}-pleasant`;
+                item.innerHTML = `<strong>${mood}</strong><br><span style="font-size: 0.8em;">${data.kr}</span>`;
+                
+                if (selectable) {
+                    item.onclick = () => toggleMoodSelection(mood, item, containerId); // containerId 전달
+                }
+                
+                container.appendChild(item);
+            });
+        }
+
+        function toggleMoodSelection(mood, element, containerId) {
+            let currentSelections = [];
+            // 현재 활성화된 화면의 mood-grid에서 선택된 항목들을 가져옴
+            const currentGrid = document.getElementById(containerId);
+            currentGrid.querySelectorAll('.mood-item.selected').forEach(item => {
+                currentSelections.push(item.querySelector('strong').textContent);
+            });
+
+            if (element.classList.contains('selected')) {
+                element.classList.remove('selected');
+                currentSelections = currentSelections.filter(m => m !== mood);
+            } else if (currentSelections.length < 3) {
+                element.classList.add('selected');
+                currentSelections.push(mood);
+            }
+            
+            // selectedMoods 변수를 현재 화면의 선택으로 업데이트
+            selectedMoods = currentSelections;
+            updateSelectionUI(containerId); // containerId 전달
+        }
+
+        function updateSelectionUI(containerId) {
+            const countElement = document.getElementById('selectionCount');
+            const continueBtn = document.getElementById('continueBtn');
+            
+            // 예측자 화면일 때만 업데이트
+            if (containerId === 'moodGrid') {
+                if (countElement) {
+                    countElement.textContent = selectedMoods.length;
+                }
+                if (continueBtn) {
+                    continueBtn.disabled = selectedMoods.length !== 3;
+                }
+            }
+        }
+
+        function joinRoom() {
+            const code = document.getElementById('roomCodeInput').value.trim().toUpperCase(); // 코드를 대문자로 변환
+            if (code.length < 3 || code.length > 6) {
+                alert('코드는 3글자에서 6글자 사이로 입력해주세요!');
+                return;
+            }
+            
+            currentRoom = code;
+            
+            // 실제 백엔드 없이 시뮬레이션:
+            // 이 부분에서 특정 코드를 입력하면 예측자/응답자 역할이 정해지거나,
+            // 짝이 맞춰지는 로직이 필요하지만, 현재는 UI 흐름을 위해 임의로 지정.
+            // 짝이 연결되었다고 가정하고, isPredictor를 랜덤으로 설정.
+            isPredictor = Math.random() < 0.5; // 50% 확률로 예측자 또는 응답자
+
+            document.getElementById('connectionStatus').innerHTML = `🟢 ${currentRoom}방에 연결됨`;
+            
+            if (isPredictor) {
+                showScreen('moodSelectionScreen');
+                generateMoodGrid('moodGrid');
+                selectedMoods = []; // 감정 선택 초기화
+                updateSelectionUI('moodGrid');
+            } else {
+                // 응답자는 친구의 예측을 기다리는 화면으로 바로 이동
+                alert('친구의 감정 예측을 기다리고 있습니다...');
+                // 실제 앱에서는 친구가 예측을 보내면 이 화면으로 전환
+                // 여기서는 1초 후 친구가 예측을 보냈다고 가정
+                setTimeout(() => {
+                    simulateReceivePredictions();
+                }, 2000); // 2초 후 예측 받기 시뮬레이션
+            }
+            updateRoleIndicator();
+        }
+
+        function updateRoleIndicator() {
+            const indicator = document.getElementById('roleIndicator');
+            if (document.getElementById('moodSelectionScreen').classList.contains('active')) {
+                indicator.innerHTML = '🎯 당신은 예측자입니다';
+            } else if (document.getElementById('responseScreen').classList.contains('active')) {
+                indicator.innerHTML = '💝 당신은 응답자입니다';
+            } else if (document.getElementById('predictionScreen').classList.contains('active')) {
+                 indicator.innerHTML = '💭 친구의 감정을 예측해보세요';
+            }
+        }
+
+        function generatePredictions() {
+            if (selectedMoods.length !== 3) {
+                alert('감정을 3개 선택해주세요!');
+                return;
+            }
+
+            predictions = [];
+            const section = document.getElementById('predictionSection');
+            section.innerHTML = '';
+            
+            selectedMoods.forEach((mood, index) => {
+                const randomExample = becauseExamples[Math.floor(Math.random() * becauseExamples.length)];
+                const div = document.createElement('div');
+                div.className = 'prediction-item';
+                div.innerHTML = `
+                    <h4>${index + 1}. You look ${mood} (${moodData[mood].kr})</h4>
+                    <div style="margin: 10px 0;">
+                        <strong>because</strong>
+                        <textarea class="because-input" id="reason${index}" placeholder="예: ${randomExample}"></textarea>
+                    </div>
+                `;
+                section.appendChild(div);
+            });
+            
+            showScreen('predictionScreen');
+            updateRoleIndicator();
+        }
+
+        function sendPredictions() {
+            let allReasonsFilled = true;
+            predictions = selectedMoods.map((mood, index) => {
+                const reasonInput = document.getElementById(`reason${index}`);
+                const reason = reasonInput.value.trim();
+                if (!reason) {
+                    allReasonsFilled = false;
+                }
+                return {
+                    mood: mood,
+                    korean: moodData[mood].kr,
+                    reason: reason || reasonInput.placeholder.replace('예: ', '') // placeholder가 있다면 그것을 기본값으로
+                };
+            });
+
+            if (!allReasonsFilled) {
+                if (!confirm('아직 이유를 모두 작성하지 않았어요. 이대로 보내시겠어요?')) {
+                    return;
+                }
+            }
+            
+            alert('친구에게 예측을 보냈습니다! 친구의 답변을 기다려주세요. 😊');
+            
+            // 실제 앱에서는 이 데이터를 친구에게 전송 (WebSockets 등)
+            // 여기서는 친구가 예측을 받았다고 가정하고, 1초 후 응답 화면 시뮬레이션
+            setTimeout(() => {
+                simulateReceivePredictions();
+            }, 2000); // 2초 후 응답 화면으로 전환
+            
+            // 예측자 화면에서 응답자 화면으로 넘어가는 대신, 결과를 기다리는 화면으로 전환
+            // 또는 친구가 응답하면 자동으로 결과 화면으로 넘어가는 로직 필요
+            // 현재는 데모를 위해 바로 시뮬레이션
+            // showScreen('waitingForResponseScreen'); // 이런 중간 화면이 있다면 좋겠죠.
+        }
+
+        // 친구로부터 예측을 받았다고 시뮬레이션
+        function simulateReceivePredictions() {
+            // isPredictor 상태를 기반으로 예측을 받는 주체를 결정
+            if (!isPredictor) { // 내가 응답자일 때 친구의 예측을 받음
+                // 친구가 보냈을 법한 3가지 무작위 감정 선택
+                const availableMoods = Object.keys(moodData);
+                const shuffledAvailableMoods = availableMoods.sort(() => 0.5 - Math.random());
+                
+                partnerPredictions = shuffledAvailableMoods.slice(0, 3).map(mood => ({
+                    mood: mood,
+                    korean: moodData[mood].kr,
+                    reason: becauseExamples[Math.floor(Math.random() * becauseExamples.length)]
+                }));
+
+                showResponseScreen();
+            } else { // 내가 예측자일 때 친구의 응답을 받음 (이 함수는 simulateReceivePredictionsByPredictor 등으로 분리될 수 있음)
+                // 예측자가 친구의 응답을 받는 경우
+                // 친구의 실제 감정 (나와 다른 무작위 감정)을 시뮬레이션
+                const availableMoods = Object.keys(moodData);
+                const shuffledAvailableMoods = availableMoods.filter(mood => !predictions.some(p => p.mood === mood)).sort(() => 0.5 - Math.random()); // 내 예측과 겹치지 않게
+                
+                myResponse = {
+                    moods: shuffledAvailableMoods.slice(0, 3).map(mood => ({
+                        mood: mood,
+                        korean: moodData[mood].kr
+                    })),
+                    reason: "I had a great day because I played with my cat!" // 임의의 이유
+                };
+                showResults(); // 바로 결과 화면으로 이동
+            }
+        }
+
+
+        function showResponseScreen() {
+            const container = document.getElementById('receivedPredictions');
+            container.innerHTML = `
+                <h3>친구가 예측한 나의 감정:</h3>
+                <p>친구가 당신의 감정을 이렇게 예측했어요. 과연 맞을까요?</p>
+            `;
+            
+            partnerPredictions.forEach((pred, index) => {
+                const div = document.createElement('div');
+                div.className = 'prediction-item';
+                div.innerHTML = `
+                    <p><strong>${index + 1}. You look ${pred.mood}</strong> (${pred.korean})</p>
+                    <p style="margin-top: 5px; color: #666;"><em>because ${pred.reason}</em></p>
+                `;
+                container.appendChild(div);
+            });
+            
+            generateMoodGrid('responseMoodGrid');
+            selectedMoods = []; // 응답자 감정 선택을 위한 초기화
+            updateSelectionUI('responseMoodGrid'); // 응답 화면 감정 선택 개수 업데이트
+            document.getElementById('myFeelingsReason').value = ''; // 이유 입력 초기화
+
+            showScreen('responseScreen');
+            updateRoleIndicator();
+        }
+
+        function sendResponse() {
+            if (selectedMoods.length !== 3) {
+                alert('내가 느끼는 감정 3개를 선택해주세요!');
+                return;
+            }
+            
+            const myReason = document.getElementById('myFeelingsReason').value.trim();
+            if (!myReason) {
+                alert('감정의 이유를 작성해주세요!');
+                return;
+            }
+            
+            myResponse = {
+                moods: selectedMoods.map(mood => ({
+                    mood: mood,
+                    korean: moodData[mood].kr
+                })),
+                reason: myReason
+            };
+            
+            alert('나의 감정을 친구에게 보냈습니다! 이제 결과를 확인해 볼까요? ✨');
+
+            // 응답자가 응답을 보내면 예측자는 결과를 받을 수 있도록 시뮬레이션
+            setTimeout(() => {
+                showResults(); // 바로 결과 화면으로 이동
+            }, 1000);
+        }
+
+        function showResults() {
+            const container = document.getElementById('resultsContent');
+            container.innerHTML = ''; // 이전 결과 초기화
+            
+            // 매칭 확인 로직 (내가 응답자일 때 친구의 예측과 내 감정을 비교)
+            const matches = partnerPredictions.map(pred => {
+                const isMatch = myResponse.moods.some(m => m.mood === pred.mood);
+                return { ...pred, isMatch };
+            });
+            
+            const correctCount = matches.filter(m => m.isMatch).length;
+            
+            container.innerHTML = `
+                <div class="prediction-section">
+                    <h3>🎯 친구의 예측 결과 (${correctCount}/3 맞음)</h3>
+                    <p>친구가 당신의 감정을 ${correctCount}개 맞췄어요!</p>
+                    ${matches.map(match => `
+                        <div class="prediction-item">
+                            <span>친구의 예측: <strong>You look ${match.mood}</strong> (${match.korean})</span>
+                            <span class="match-indicator ${match.isMatch ? 'match-correct' : 'match-incorrect'}">
+                                ${match.isMatch ? '✓ 맞음!' : '✗ 틀림'}
+                            </span>
+                            <p style="margin-top: 5px; color: #666;"><em>(친구의 이유: because ${match.reason})</em></p>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="response-section">
+                    <h3>💝 나의 실제 감정</h3>
+                    <p><strong>나는 지금:</strong> ${myResponse.moods.map(m => `${m.mood} (${m.korean})`).join(', ')}</p>
+                    <p style="margin-top: 10px;"><strong>because</strong> ${myResponse.reason}</p>
+                </div>
+            `;
+            
+            // 응원 메시지 입력 필드 초기화 및 버튼 활성화
+            document.getElementById('supportMessage').value = '';
+            document.getElementById('sendSupportBtn').disabled = false;
+
+            showScreen('resultsScreen');
+        }
+
+        function sendSupport() {
+            const message = document.getElementById('supportMessage').value.trim();
+            if (!message) {
+                alert('응원 메시지를 작성해주세요!');
+                return;
+            }
+            
+            alert('응원 메시지를 친구에게 보냈습니다! 💕');
+            
+            // 메시지 전송 후 UI 업데이트
+            const supportDiv = document.querySelector('#resultsScreen .support-message');
+            if (supportDiv) {
+                supportDiv.innerHTML = `
+                    <h3>💙 응원 메시지 전송 완료!</h3>
+                    <p>친구에게 따뜻한 메시지가 전달되었습니다.</p>
+                    <p style="font-style: italic; color: #555;">"${message}"</p>
+                    <p style="margin-top: 15px;">서로의 감정을 이해하는 시간을 가졌어요. 다음에도 함께해요!</p>
+                `;
+            }
+        }
+
+        function startNewChat() {
+            // 모든 상태 초기화
+            currentRoom = '';
+            selectedMoods = [];
+            predictions = [];
+            isPredictor = true; 
+            partnerPredictions = [];
+            myResponse = {};
+
+            // 입력 필드 초기화
+            document.getElementById('roomCodeInput').value = '';
+            document.getElementById('myFeelingsReason').value = '';
+            document.getElementById('supportMessage').value = '';
+
+            // UI 상태 초기화
+            document.getElementById('connectionStatus').innerHTML = '🟢 Ready to Connect';
+            updateSelectionUI('moodGrid'); // 선택 개수 0으로
+            document.getElementById('continueBtn').disabled = true; // 버튼 비활성화
+
+            showScreen('roomCodeScreen'); // 첫 화면으로 돌아가기
+        }
+
+        // 앱 시작 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            showScreen('roomCodeScreen');
+            // 예측자/응답자 역할에 따라 초기 화면이 달라질 수 있도록 joinRoom에서 역할 할당 후 화면 전환
+            // 초기에는 단순히 RoomCodeScreen을 보여줌
+        });
+    </script>
+</body>
+</html>
